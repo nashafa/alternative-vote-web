@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <title>Alternative Vote</title>
+</head>
+
+<body onload="load_file()">
+  <input type="file" accept=".csv" id="uploaded_files" onchange="load_file()">
+  <p id="help_text"></p>
+  <p>---</p>
+  <p>Notes:</p>
+  <p>  - Please follow the instructions to create a valid .csv file.</p>
+  <p>  - This currently only supports selecting one winner.</p>
+  <script>
+    let votes = {}
+    let tie = false;
+    let win_check = false;
+    let win_check_2 = true;
+
+    function display_votes(winner) {
+        document.getElementById("help_text").innerHTML = "Winner: " + winner;
+    }
+
+    function count_votes(ignored_candidates) {
+      // set up empty ignored_candidates array if not given
+      if (!ignored_candidates) {
+        ignored_candidates = [];
+      }
+
+      let candidates = {};
+      for (vote in votes) {
+        // iterate over each choice, since they should be sorted
+        for (i = 0; i < votes[vote].voter_choices.length; i++) {
+          let candidate = votes[vote].voter_choices[i];
+          // skip candidates on ignored list
+          if (!ignored_candidates.includes(candidate)) {
+            // add candidate to candidate list if not there already
+            if (!candidates.hasOwnProperty(candidate)) {
+              candidates[candidate] = 0;
+            }
+            // add a vote
+            candidates[candidate]++;
+            // break the loop if a vote is counted
+            i = votes[vote].voter_choices.length;
+          }
+        }
+      }
+
+      // determine losers
+      let losers = [];
+      let least_votes = 4294967295;
+      for (candidate in candidates) {
+        if (least_votes > candidates[candidate]) {
+          least_votes = candidates[candidate];
+        }
+      }
+      for (candidate in candidates) {
+        if (least_votes == candidates[candidate]) {
+          losers.push(candidate);
+        }
+      }
+
+      // determine winners
+      let winners = []
+      let most_votes = 0;
+      for (candidate in candidates) {
+        if (most_votes < candidates[candidate]) {
+          most_votes = candidates[candidate];
+        }
+      }
+      for (candidate in candidates) {
+        if (most_votes == candidates[candidate]) {
+          winners.push(candidate);
+        }
+      }
+
+      // recursive algorithm that stops removing candidates when a tie is reached or only one candidate is left
+      while (!tie) {
+        if (Object.keys(candidates).length == winners.length && winners.length == losers.length) {
+          tie = true;
+        } else {
+          // add losers to ignored list
+          ignored_candidates = ignored_candidates.concat(losers);
+          // recount votes
+          count_votes(ignored_candidates);
+        }
+        // as algorithm works backwards, determine winner when tie is broken
+        if (win_check && win_check_2) {
+          if (winners.length == 1) {
+            display_votes(winners);
+            win_check_2 = false;
+          }
+        }
+        win_check = true;
+      }
+    }
+
+    function parse_file(file) {
+      const reader = new FileReader();
+      reader.readAsText(file);
+      reader.onload = function(event) {
+        const data = event.target.result.split("\n");
+        data.shift();
+        // fill votes object
+        for (i = 0; i < data.length; i++) {
+          let line = data[i].split(",");
+          let name = line[1];
+          let choices = line.splice(2);
+          votes[name] = {
+            voter_name: name,
+            voter_choices: choices
+          }
+        }
+        count_votes();
+      };
+    }
+
+    function load_file() {
+      help_text = "Please select a valid .csv file.";
+      let loaded_files = document.getElementById("uploaded_files");
+      let file = loaded_files.files[0];
+      if (file) {
+        if (file.type.match("text/csv")) {
+          // reset vote data if new file uploaded
+          votes = {}
+          tie = false;
+          win_check = false;
+          win_check_2 = true;
+          parse_file(file);
+        }
+      }
+      document.getElementById("help_text").innerHTML = help_text;
+    }
+  </script>
+
+</body>
+
+</html>
