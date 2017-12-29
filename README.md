@@ -1,6 +1,6 @@
 # Alternative Vote Web
 
-A fork Alex's old Python code.
+A fork of Alex's old Python code.
 Somewhat original code. Mine is recursive to automatically determine a winner.
 
 To Do:
