@@ -6,20 +6,46 @@
 </head>
 
 <body onload="load_file()">
-  <input type="file" accept=".csv" id="uploaded_files" onchange="load_file()">
+  <h1>alternative-vote-web</h1>
+  <p>Number of winners:
+    <input type="number" min: "1" max: "10" id="number_of_winners_input">
+  </p>
+  <input type="file" accept=".csv" id="uploaded_files">
+  <br><br>
+  <button type="button" onclick="load_file()">Go, democracy. Go!</button>
   <p id="help_text"></p>
   <p>---</p>
-  <p>Notes:</p>
-  <p>  - Please follow the instructions to create a valid .csv file.</p>
-  <p>  - This currently only supports selecting one winner.</p>
+  <h3>Notes:</h3>
+  <ul>
+    <li>Please follow the instructions to create a valid .csv file.</li>
+    <li>If you get duplicate winners your data set likely has issues. Try adding another winner as a temporary fix.</li>
+    <li>The script won't return a list of winners if the number of winners you select results in a perfect tie or exceeds the number of candidates.</li>
+    <li>Multiple winners are displayed in order of rank.</li>
+  </ul>
   <script>
-    let votes = {}
+    let votes = {};
     let tie = false;
     let win_check = false;
     let win_check_2 = true;
+    let number_of_winners = 0;
+    let full_winners = [];
 
-    function display_votes(winner) {
-        document.getElementById("help_text").innerHTML = "Winner: " + winner;
+    function display_votes(winners) {
+      let help_text = "";
+      if (number_of_winners == 1) {
+        help_text = "Winner: ";
+      } else {
+        help_text = "Winners: ";
+      }
+      for (i=0;i<winners.length;i++) {
+        help_text = help_text + winners[i];
+        if (i<winners.length-1) {
+          help_text = help_text + ", ";
+        } else {
+          help_text = help_text + ".";
+        }
+      }
+      document.getElementById("help_text").innerHTML = help_text;
     }
 
     function count_votes(ignored_candidates) {
@@ -85,14 +111,24 @@
           // recount votes
           count_votes(ignored_candidates);
         }
+        // add "winning" candidates to a larger list if looking for more than one winner
+        for (candidate in candidates) {
+          if (!full_winners.includes(candidate)) {
+            full_winners.push(candidate);
+          }
+        }
         // as algorithm works backwards, determine winner when tie is broken
+        win_check = true;
         if (win_check && win_check_2) {
-          if (winners.length == 1) {
+          if (winners.length == number_of_winners) {
             display_votes(winners);
+            win_check_2 = false;
+          } else if (full_winners.length == number_of_winners) {
+            display_votes(full_winners);
             win_check_2 = false;
           }
         }
-        win_check = true;
+
       }
     }
 
@@ -117,7 +153,7 @@
     }
 
     function load_file() {
-      help_text = "Please select a valid .csv file.";
+      let help_text = "Please select a valid .csv file and number of winners.";
       let loaded_files = document.getElementById("uploaded_files");
       let file = loaded_files.files[0];
       if (file) {
@@ -127,7 +163,14 @@
           tie = false;
           win_check = false;
           win_check_2 = true;
-          parse_file(file);
+          full_winners = [];
+          // set number of winners
+          number_of_winners = document.getElementById("number_of_winners_input").value;
+          if (number_of_winners > 0) {
+            parse_file(file);
+          } else {
+            help_text = "Please select a number of winners (greater than zero)."
+          }
         }
       }
       document.getElementById("help_text").innerHTML = help_text;
