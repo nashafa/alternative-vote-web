@@ -1,8 +1,7 @@
 # Alternative Vote Web
 
-A JS fork of Alex's old Python code.
-Somewhat original code. Made recursive to automatically determine a winner.
+A JS version of Alex's old Python code.
+Mostly original code. Made recursive to automatically determine winners. Now supports selecting multiple winners.
 
 To Do:
-- support determining more than one winner
 - make things prettier
